@@ -11,13 +11,20 @@ import android.content.ContentUris
 import android.net.Uri
 import kotlinx.android.synthetic.main.activity_main.*
 import android.view.View
+import android.os.Handler
+import java.util.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private val PERMISSIONS_REQUEST_CODE = 100
 
+    private var mTimer: Timer? = null
+
+    private var mHandler = Handler()
+
     public var increment = 0
     public var max_increment = 0
+    public var counter = 0 // 0:再生ボタン, 1:停止ボタン
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +32,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
-        button3.setOnClickListener(this)
+
 
         // Android 6.0以降の場合
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -40,6 +47,46 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             // Android 5系以下の場合
         } else {
             getContentsInfo()
+        }
+
+        button3.setOnClickListener{
+
+            // 再生と停止の切り替え
+            counter += 1
+            if(counter>1){
+                counter = 0
+            }
+
+            if(counter == 0){
+                button3.text = "再生"
+                if (mTimer != null){
+                    mTimer!!.cancel()
+                    mTimer = null
+                }
+                button1.isClickable = true
+                button2.isClickable = true
+            }else if(counter == 1){
+                button3.text = "停止"
+                if (mTimer == null){
+                    mTimer = Timer()
+                    mTimer!!.schedule(object : TimerTask() {
+                        override fun run() {
+                            mHandler.post {
+                                getContentsInfo()
+                                increment += 1
+                                if(increment>max_increment){
+                                    increment = 0
+                                }
+                                Log.d("getContentsInfo", "test")
+                            }
+                        }
+                    }, 2000, 2000) // 最初に始動させるまで 100ミリ秒、ループの間隔を 100ミリ秒 に設定
+
+                }
+                button1.isClickable = false
+                button2.isClickable = false
+            }
+            Log.d("counter", counter.toString() + "/" + button3.text)
         }
     }
 
@@ -143,21 +190,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(v: View){
         if (v.id == R.id.button1) {
-            getContentsInfo()
             increment += 1
             if(increment>max_increment){
                 increment = 0
             }
+            getContentsInfo()
             Log.d("button1", "進む ボタン1をタップした")
         }else if(v.id == R.id.button2){
-            getContentsInfo()
             increment -= 1
             if(increment<0){
                 increment = max_increment
             }
+            getContentsInfo()
             Log.d("button2", "ボタン2をタップした")
-        }else if(v.id == R.id.button3){
-            Log.d("button3", "ボタン3をタップした")
         }
         Log.d("increments_onClick", increment.toString() + "/" + max_increment.toString())
     }
