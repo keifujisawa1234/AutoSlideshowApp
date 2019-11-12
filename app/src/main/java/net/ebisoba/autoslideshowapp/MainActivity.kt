@@ -22,6 +22,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private var mHandler = Handler()
 
+    // Uriのデータ
+    val list = ArrayList<Uri>()
+
     public var increment = 0
     public var max_increment = 0
     public var counter = 0 // 0:再生ボタン, 1:停止ボタン
@@ -43,6 +46,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             } else {
                 // 許可されていないので許可ダイアログを表示する
                 requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSIONS_REQUEST_CODE)
+                button1.isEnabled = false
+                button2.isEnabled = false
+
             }
             // Android 5系以下の場合
         } else {
@@ -63,8 +69,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     mTimer!!.cancel()
                     mTimer = null
                 }
-                button1.isClickable = true
-                button2.isClickable = true
+                button1.isEnabled = true
+                button2.isEnabled = true
+
             }else if(counter == 1){
                 button3.text = "停止"
                 if (mTimer == null){
@@ -72,19 +79,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     mTimer!!.schedule(object : TimerTask() {
                         override fun run() {
                             mHandler.post {
-                                getContentsInfo()
+//                                getContentsInfo()
+                                showImage()
                                 increment += 1
                                 if(increment>max_increment){
                                     increment = 0
                                 }
-                                Log.d("getContentsInfo", "test")
                             }
                         }
                     }, 2000, 2000) // 最初に始動させるまで 100ミリ秒、ループの間隔を 100ミリ秒 に設定
 
                 }
-                button1.isClickable = false
-                button2.isClickable = false
+                button1.isEnabled = false
+                button2.isEnabled = false
             }
             Log.d("counter", counter.toString() + "/" + button3.text)
         }
@@ -119,33 +126,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         var imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
 
 
-        val list = ArrayList<Uri>()
+        do {
+        // indexからIDを取得し、そのIDから画像のURIを取得する
+        fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
+        id = cursor.getLong(fieldIndex)
+        imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
 
-            do {
-//        if(cursor.moveToNext()){
-//            // indexからIDを取得し、そのIDから画像のURIを取得する
-            fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-            id = cursor.getLong(fieldIndex)
-            imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+        list.add(imageUri)
 
-                list.add(imageUri)
-//            Log.d("ANDROIDs", "URI : " + imageUri.toString())
-//
-//            // 番号の抽出
-//            var regex = Regex(pattern = "1|2|3|4|5|6|7|8|9|0|")
-//            var matched = regex.containsMatchIn(input = "imageUri.toString()")
-//            var numbers = imageUri.toString()
-//            numbers = numbers.replace("content://media/external/images/media/", "")
-//            var numberInt = Integer.parseInt(numbers)
-//            Log.d("ANDROIDs_matched", matched.toString())
-//            Log.d("ANDROIDss_numberInt", numberInt.toString())
-//
-//
-//            // 画像
-            imageView.setImageURI(imageUri)
-//            Log.d("ANDROIDss", cursor.moveToNext().toString())
-//        }
-            } while (cursor.moveToNext())
+        // 画像
+        imageView.setImageURI(imageUri)
+
+        } while (cursor.moveToNext())
 
         // 画像表示
         imageView.setImageURI(list[increment])
@@ -157,53 +149,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
         Log.d("increments", increment.toString() + "/" + max_increment.toString())
 
-
-//        if (cursor!!.moveToFirst()) {
-//            do {
-//        if(cursor.moveToNext()){
-//            // indexからIDを取得し、そのIDから画像のURIを取得する
-//            fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-//            id = cursor.getLong(fieldIndex)
-//            imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-//
-//            Log.d("ANDROIDs", "URI : " + imageUri.toString())
-//
-//            // 番号の抽出
-//            var regex = Regex(pattern = "1|2|3|4|5|6|7|8|9|0|")
-//            var matched = regex.containsMatchIn(input = "imageUri.toString()")
-//            var numbers = imageUri.toString()
-//            numbers = numbers.replace("content://media/external/images/media/", "")
-//            var numberInt = Integer.parseInt(numbers)
-//            Log.d("ANDROIDs_matched", matched.toString())
-//            Log.d("ANDROIDss_numberInt", numberInt.toString())
-//
-//
-//            // 画像
-//            imageView.setImageURI(imageUri)
-//            Log.d("ANDROIDss", cursor.moveToNext().toString())
-//        }
-//            } while (cursor.moveToNext())
-
-//        }
         cursor.close()
     }
 
+    // 画像表示
+    private fun showImage(){
+        // 画像表示
+        imageView.setImageURI(list[increment])
+        max_increment = list.size - 1
+        Log.d("lists", max_increment.toString())
+
+    }
+
+    // button1, button2
     override fun onClick(v: View){
         if (v.id == R.id.button1) {
             increment += 1
             if(increment>max_increment){
                 increment = 0
             }
-            getContentsInfo()
-            Log.d("button1", "進む ボタン1をタップした")
+            showImage()
         }else if(v.id == R.id.button2){
             increment -= 1
             if(increment<0){
                 increment = max_increment
             }
-            getContentsInfo()
-            Log.d("button2", "ボタン2をタップした")
+            showImage()
         }
-        Log.d("increments_onClick", increment.toString() + "/" + max_increment.toString())
     }
 }
